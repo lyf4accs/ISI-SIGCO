@@ -1,0 +1,30 @@
+{
+  "residents": [
+    {
+      "dni": "12345670V",
+      "firstName": "try",
+      "lastName": "try",
+      "address": "C/prueba",
+      "postalCode": "46100",
+      "city": "Valencia",
+      "phone": "909000000"
+    }
+  ],
+  "managers": [
+    {
+      "managerId": 1,
+      "name": "Jose Perez"
+    },
+    {
+      "managerId": 2,
+      "name": "Mara Martinez"
+    }
+  ],
+  "visits": [],
+  "invoices": [],
+  "counters": {
+    "visitId": 1000,
+    "invoiceId": 5000,
+    "managerId": 2
+  }
+}

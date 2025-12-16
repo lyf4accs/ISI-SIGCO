@@ -1,0 +1,21 @@
+{
+  "name": "sigco-backend",
+  "version": "1.0.0",
+  "private": true,
+  "main": "dbServer.js",
+  "scripts": {
+    "start": "node dbServer.js",
+    "dev": "nodemon dbServer.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.22.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
