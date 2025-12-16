@@ -36,9 +36,18 @@ function loadDb() {
 
 function saveDbAtomic(db) {
   const tmp = DB_PATH + ".tmp";
-  fs.writeFileSync(tmp, JSON.stringify(db, null, 2), "utf-8");
-  fs.renameSync(tmp, DB_PATH);
+  const content = JSON.stringify(db, null, 2);
+
+  // 1) write temp
+  fs.writeFileSync(tmp, content, "utf-8");
+
+  // 2) overwrite db.json safely (copy temp over it)
+  fs.copyFileSync(tmp, DB_PATH);
+
+  // 3) cleanup temp (best-effort)
+  try { fs.unlinkSync(tmp); } catch {}
 }
+
 
 // Serialize all writes to prevent double-billing in a single-node process.
 let writeQueue = Promise.resolve();

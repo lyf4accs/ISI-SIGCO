@@ -20,11 +20,62 @@
       "name": "Mara Martinez"
     }
   ],
-  "visits": [],
-  "invoices": [],
+  "visits": [
+    {
+      "visitId": 1001,
+      "residentDni": "12345670V",
+      "visitDate": "2025-12-16",
+      "description": "hiiiiiiiiiiiiiiiiiiiiiiii",
+      "amount": 80,
+      "managerId": "1",
+      "status": "PAID",
+      "invoiceId": 5001
+    },
+    {
+      "visitId": 1002,
+      "residentDni": "12345670V",
+      "visitDate": "2025-12-16",
+      "description": "dnjkfhaskdjfaskjfasf",
+      "amount": 358495849,
+      "managerId": "2",
+      "status": "PAID",
+      "invoiceId": 5002
+    },
+    {
+      "visitId": 1003,
+      "residentDni": "12345670V",
+      "visitDate": "2025-12-16",
+      "description": "dfgshsrhsrbhsz",
+      "amount": 354235,
+      "managerId": "2",
+      "status": "PAID",
+      "invoiceId": 5002
+    }
+  ],
+  "invoices": [
+    {
+      "invoiceId": 5001,
+      "residentDni": "12345670V",
+      "creationDate": "2025-12-16",
+      "visitIds": [
+        1001
+      ],
+      "totalAmount": 80
+    },
+    {
+      "invoiceId": 5002,
+      "residentDni": "12345670V",
+      "creationDate": "2025-12-16",
+      "visitIds": [
+        1002,
+        1003
+      ],
+      "totalAmount": 358850084
+    }
+  ],
   "counters": {
-    "visitId": 1000,
-    "invoiceId": 5000,
+    "visitId": 1003,
+    "invoiceId": 5002,
     "managerId": 2
   }
 }
