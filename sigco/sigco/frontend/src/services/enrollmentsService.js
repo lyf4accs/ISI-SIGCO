@@ -18,6 +18,7 @@ export const enrollmentsService = {
   // convenience
   residentCourses: (dni) =>
     api(`/residents/${encodeURIComponent(dni)}/enrolled-courses`),
+  
 
   courseResidents: (courseId) =>
     api(`/courses/${encodeURIComponent(courseId)}/enrolled-residents`),

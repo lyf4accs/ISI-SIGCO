@@ -18,14 +18,11 @@ export async function EnrollmentFormView({ courseId = "", residentDni = "" } = {
           <label>Course</label>
           <select id="courseId">
             <option value="">-- select --</option>
-            ${courses
-              .map(
-                (c) =>
-                  `<option value="${c.courseId}" ${
-                    String(c.courseId) === String(courseId) ? "selected" : ""
-                  }>${c.name} (capacity ${c.enrolledCount ?? 0}/${c.maxResidents})</option>`
-              )
-              .join("")}
+            ${courses.map(c => `
+              <option value="${c.courseId}" ${String(c.courseId) === String(courseId) ? "selected" : ""}>
+                ${c.name} (${c.enrolledCount ?? 0}/${c.maxResidents})
+              </option>
+            `).join("")}
           </select>
           <div id="cap" class="muted" style="margin-top:6px;"></div>
         </div>
@@ -34,14 +31,11 @@ export async function EnrollmentFormView({ courseId = "", residentDni = "" } = {
           <label>Resident</label>
           <select id="residentDni">
             <option value="">-- select --</option>
-            ${residents
-              .map(
-                (r) =>
-                  `<option value="${r.dni}" ${
-                    String(r.dni) === String(residentDni) ? "selected" : ""
-                  }>${r.dni} — ${r.firstName} ${r.lastName}</option>`
-              )
-              .join("")}
+            ${residents.map(r => `
+              <option value="${r.dni}" ${String(r.dni) === String(residentDni) ? "selected" : ""}>
+                ${r.dni} — ${r.firstName} ${r.lastName}
+              </option>
+            `).join("")}
           </select>
         </div>
 
@@ -63,6 +57,7 @@ export async function EnrollmentFormView({ courseId = "", residentDni = "" } = {
 
   function bind() {
     const root = document.getElementById("app");
+
     const courseSel = qs("#courseId", root);
     const residentSel = qs("#residentDni", root);
     const dateInput = qs("#enrollmentDate", root);
@@ -70,31 +65,17 @@ export async function EnrollmentFormView({ courseId = "", residentDni = "" } = {
     const btnSave = qs("#save", root);
     const btnCancel = qs("#cancel", root);
 
-    if (!courseSel || !residentSel || !dateInput || !capEl || !btnSave || !btnCancel) {
-      console.error("EnrollmentFormView missing elements", {
-        courseSel,
-        residentSel,
-        dateInput,
-        capEl,
-        btnSave,
-        btnCancel,
-      });
-      return;
-    }
-
     btnCancel.onclick = () => {
-      // go back to a sensible place
       if (residentDni) location.hash = `#/residents/${encodeURIComponent(residentDni)}`;
       else if (courseId) location.hash = `#/courses/${encodeURIComponent(courseId)}`;
       else location.hash = "#/courses";
     };
 
-    async function refreshCapacityAndButton() {
+    async function refresh() {
+      btnSave.disabled = true;
+
       const cid = courseSel.value;
       const rdni = residentSel.value;
-
-      btnSave.disabled = true;
-      capEl.textContent = "";
 
       if (!cid) {
         capEl.textContent = "Select a course.";
@@ -107,45 +88,38 @@ export async function EnrollmentFormView({ courseId = "", residentDni = "" } = {
 
         if (!s.hasCapacity) {
           capEl.textContent += " · Course is FULL";
-          btnSave.disabled = true;
           return;
         }
-      } catch (e) {
+      } catch {
         capEl.textContent = "Could not load course summary.";
-        btnSave.disabled = true;
         return;
       }
 
-      // enable only if both selected
-      btnSave.disabled = !cid || !rdni;
+      btnSave.disabled = !(cid && rdni);
     }
 
-    courseSel.addEventListener("change", refreshCapacityAndButton);
-    residentSel.addEventListener("change", refreshCapacityAndButton);
+    courseSel.addEventListener("change", refresh);
+    residentSel.addEventListener("change", refresh);
 
     btnSave.onclick = async () => {
       try {
         const payload = {
           residentDni: residentSel.value,
-          courseId: Number(courseSel.value), // backend accepts string too, but this keeps it clean
+          courseId: Number(courseSel.value),
           enrollmentDate: dateInput.value.trim(),
         };
 
         await enrollmentsService.create(payload);
         toast("Enrollment created");
 
-        // after save, go back so user sees it immediately
-        if (payload.residentDni) {
-          location.hash = `#/residents/${encodeURIComponent(payload.residentDni)}`;
-        } else {
-          location.hash = `#/courses/${encodeURIComponent(payload.courseId)}`;
-        }
+        // show it immediately
+        location.hash = `#/residents/${encodeURIComponent(payload.residentDni)}`;
       } catch (e) {
         toast(e.message || "Could not enroll");
         console.error(e);
       }
     };
 
-    refreshCapacityAndButton();
+    refresh();
   }
 }

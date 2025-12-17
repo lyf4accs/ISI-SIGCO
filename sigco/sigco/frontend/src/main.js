@@ -22,19 +22,20 @@ import { EnrollmentFormView } from "./views/EnrollmentFormView.js";
 
 const app = document.getElementById("app");
 
-function parseRoute() {
-  const hash = location.hash || "#/residents";
-  const parts = hash.replace("#", "").split("/").filter(Boolean);
-  return parts;
-}
+function parseHash() {
+  const raw = location.hash || "#/residents";
+  const cleaned = raw.startsWith("#") ? raw.slice(1) : raw; // remove '#'
+  const [pathPart, queryPart = ""] = cleaned.split("?");
 
-function getQuery() {
-  const url = new URL(location.href);
-  return url.searchParams;
+  const parts = pathPart.split("/").filter(Boolean);
+  const query = new URLSearchParams(queryPart);
+
+  return { parts, query };
 }
 
 async function render() {
-  const parts = parseRoute();
+  const { parts, query } = parseHash();
+
 
   try {
     // Residents
@@ -128,12 +129,12 @@ async function render() {
     // Enrollment create (opened from course detail or resident detail)
     // #/enrollments/new?courseId=1&residentDni=123...
     if (parts[0] === "enrollments" && parts[1] === "new") {
-      const qp = getQuery();
-      const courseId = qp.get("courseId") || "";
-      const residentDni = qp.get("residentDni") || "";
-      app.innerHTML = await EnrollmentFormView({ courseId, residentDni });
-      return;
-    }
+  const courseId = query.get("courseId") || "";
+  const residentDni = query.get("residentDni") || "";
+  app.innerHTML = await EnrollmentFormView({ courseId, residentDni });
+  return;
+}
+
 
     // Default
     location.hash = "#/residents";

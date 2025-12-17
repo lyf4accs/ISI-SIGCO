@@ -14,6 +14,8 @@ app.use("/api", (req, res, next) => {
   res.setHeader("Surrogate-Control", "no-store");
   next();
 });
+app.set("etag", false);
+
 
 
 const DB_PATH = path.join(__dirname, "db.json");

@@ -67,8 +67,8 @@
       "description": "ssssssssssssssssssssssssssssssssssssssssssss",
       "amount": 40,
       "managerId": "1",
-      "status": "UNPAID",
-      "invoiceId": null
+      "status": "PAID",
+      "invoiceId": 5003
     }
   ],
   "invoices": [
@@ -90,6 +90,15 @@
         1003
       ],
       "totalAmount": 358850084
+    },
+    {
+      "invoiceId": 5003,
+      "residentDni": "12345677N",
+      "creationDate": "2025-12-17",
+      "visitIds": [
+        1004
+      ],
+      "totalAmount": 40
     }
   ],
   "teachers": [
@@ -142,15 +151,21 @@
       "residentDni": "12345670V",
       "courseId": 1,
       "enrollmentDate": "2025-12-16"
+    },
+    {
+      "enrollmentId": 2,
+      "residentDni": "12345677N",
+      "courseId": 1,
+      "enrollmentDate": "2025-12-17"
     }
   ],
   "counters": {
     "visitId": 1004,
-    "invoiceId": 5002,
+    "invoiceId": 5003,
     "managerId": 2,
     "teacherId": 3,
     "courseId": 1,
     "subjectId": 2,
-    "enrollmentId": 1
+    "enrollmentId": 2
   }
 }
