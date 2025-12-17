@@ -7,9 +7,18 @@ import { ResidentDetailView } from "./views/ResidentDetailView.js";
 import { VisitsListView } from "./views/VisitsListView.js";
 import { VisitsFormView } from "./views/VisitsFormView.js";
 
-import { InvoiceListView } from "./views/InvoiceListView.js";  
+import { InvoiceListView } from "./views/InvoiceListView.js";
 import { InvoiceCreateView } from "./views/InvoiceCreateView.js";
 import { InvoiceDetailView } from "./views/InvoiceDetailView.js";
+
+// Exercise 2 views
+import { TeachersListView } from "./views/TeachersListView.js";
+import { TeacherFormView } from "./views/TeacherFormView.js";
+import { CoursesListView } from "./views/CoursesListView.js";
+import { CoursesFormView } from "./views/CoursesFormView.js";
+import { CoursesDetailView } from "./views/CoursesDetailView.js";
+import { SubjectFormView } from "./views/SubjectFormView.js";
+import { EnrollmentFormView } from "./views/EnrollmentFormView.js";
 
 const app = document.getElementById("app");
 
@@ -17,6 +26,11 @@ function parseRoute() {
   const hash = location.hash || "#/residents";
   const parts = hash.replace("#", "").split("/").filter(Boolean);
   return parts;
+}
+
+function getQuery() {
+  const url = new URL(location.href);
+  return url.searchParams;
 }
 
 async function render() {
@@ -43,8 +57,8 @@ async function render() {
       return;
     }
     if (parts[0] === "visits" && parts[1] === "new") {
-      const url = new URL(location.href);
-      const residentDni = url.searchParams.get("residentDni") || "";
+      const qp = getQuery();
+      const residentDni = qp.get("residentDni") || "";
       app.innerHTML = await VisitsFormView({ residentDni });
       return;
     }
@@ -55,13 +69,69 @@ async function render() {
       return;
     }
     if (parts[0] === "invoices" && parts[1] === "new") {
-      const url = new URL(location.href);
-      const residentDni = url.searchParams.get("residentDni") || "";
+      const qp = getQuery();
+      const residentDni = qp.get("residentDni") || "";
       app.innerHTML = await InvoiceCreateView({ residentDni });
       return;
     }
     if (parts[0] === "invoices" && parts.length === 2) {
       app.innerHTML = await InvoiceDetailView({ invoiceId: decodeURIComponent(parts[1]) });
+      return;
+    }
+
+    // ===================== Exercise 2 =====================
+
+    // Teachers
+    if (parts[0] === "teachers" && parts.length === 1) {
+      app.innerHTML = await TeachersListView();
+      return;
+    }
+    if (parts[0] === "teachers" && parts[1] === "new") {
+      app.innerHTML = await TeacherFormView({ mode: "create" });
+      return;
+    }
+    if (parts[0] === "teachers" && parts.length === 2) {
+      app.innerHTML = await TeacherFormView({ mode: "edit", teacherId: decodeURIComponent(parts[1]) });
+      return;
+    }
+
+    // Courses
+    if (parts[0] === "courses" && parts.length === 1) {
+      app.innerHTML = await CoursesListView();
+      return;
+    }
+    if (parts[0] === "courses" && parts[1] === "new") {
+      app.innerHTML = await CoursesFormView({ mode: "create" });
+      return;
+    }
+    if (parts[0] === "courses" && parts.length === 2) {
+      app.innerHTML = await CoursesDetailView({ courseId: decodeURIComponent(parts[1]) });
+      return;
+    }
+
+    // Subject create/edit (opened from course detail)
+    // #/subjects/new?courseId=1
+    // #/subjects/123?courseId=1   (edit)
+    if (parts[0] === "subjects" && parts[1] === "new") {
+      const qp = getQuery();
+      const courseId = qp.get("courseId") || "";
+      app.innerHTML = await SubjectFormView({ mode: "create", courseId });
+      return;
+    }
+    if (parts[0] === "subjects" && parts.length === 2) {
+      const qp = getQuery();
+      const courseId = qp.get("courseId") || "";
+      app.innerHTML = await SubjectFormView({ mode: "edit", subjectId: decodeURIComponent(parts[1]), courseId });
+      return;
+    }
+
+    // Enrollment create (opened from course detail or resident detail)
+    // #/enrollments/new?courseId=1&residentDni=123...
+    if (parts[0] === "enrollments" && parts[1] === "new") {
+      const qp = getQuery();
+      const courseId = qp.get("courseId") || "";
+      const residentDni = qp.get("residentDni") || "";
+      app.innerHTML = await EnrollmentFormView({ courseId, residentDni });
       return;
     }
 

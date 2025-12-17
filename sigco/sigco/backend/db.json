@@ -8,6 +8,15 @@
       "postalCode": "46100",
       "city": "Valencia",
       "phone": "909000000"
+    },
+    {
+      "dni": "12345677N",
+      "firstName": "another try",
+      "lastName": "another try",
+      "address": "c/ h",
+      "postalCode": "46167",
+      "city": "valencia",
+      "phone": "888888888"
     }
   ],
   "managers": [
@@ -50,6 +59,16 @@
       "managerId": "2",
       "status": "PAID",
       "invoiceId": 5002
+    },
+    {
+      "visitId": 1004,
+      "residentDni": "12345677N",
+      "visitDate": "2025-12-17",
+      "description": "ssssssssssssssssssssssssssssssssssssssssssss",
+      "amount": 40,
+      "managerId": "1",
+      "status": "UNPAID",
+      "invoiceId": null
     }
   ],
   "invoices": [
@@ -73,9 +92,65 @@
       "totalAmount": 358850084
     }
   ],
+  "teachers": [
+    {
+      "teacherId": 1,
+      "firstName": "Pepa",
+      "lastName": "Sanchez",
+      "address": "Av. del Puerto 10",
+      "phone": "+34 611 111 111",
+      "salary": 1200.01
+    },
+    {
+      "teacherId": 2,
+      "firstName": "Chimo",
+      "lastName": "Iba�ez",
+      "address": "C/ Col�n 5",
+      "phone": "+34 622 222 222",
+      "salary": 1500
+    }
+  ],
+  "courses": [
+    {
+      "courseId": 1,
+      "name": "Washing Machine Maintenance",
+      "price": 90,
+      "maxResidents": 2,
+      "startDate": "2026-01-10",
+      "endDate": "2026-01-20"
+    }
+  ],
+  "subjects": [
+    {
+      "subjectId": 1,
+      "courseId": 1,
+      "name": "Descaling",
+      "hours": 3,
+      "teacherId": 1
+    },
+    {
+      "subjectId": 2,
+      "courseId": 1,
+      "name": "Electronics Basics",
+      "hours": 5,
+      "teacherId": 2
+    }
+  ],
+  "enrollments": [
+    {
+      "enrollmentId": 1,
+      "residentDni": "12345670V",
+      "courseId": 1,
+      "enrollmentDate": "2025-12-16"
+    }
+  ],
   "counters": {
-    "visitId": 1003,
+    "visitId": 1004,
     "invoiceId": 5002,
-    "managerId": 2
+    "managerId": 2,
+    "teacherId": 3,
+    "courseId": 1,
+    "subjectId": 2,
+    "enrollmentId": 1
   }
 }

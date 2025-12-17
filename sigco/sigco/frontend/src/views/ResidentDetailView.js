@@ -2,12 +2,15 @@ import { residentsService } from "../services/residentsService.js";
 import { visitsService } from "../services/visitsService.js";
 import { invoicesService } from "../services/invoicesService.js";
 import { badge, moneyEUR } from "../components/ui.js";
+import { enrollmentsService } from "../services/enrollmentsService.js";
+
 
 export async function ResidentDetailView({ dni }) {
   const r = await residentsService.get(dni);
   const unpaid = await residentsService.unpaid(dni);
   const visits = await visitsService.list({ residentDni: dni });
   const invoices = await invoicesService.list({ residentDni: dni });
+  const courses = await enrollmentsService.residentCourses(dni);
 
   const html = `
     <div class="card">
@@ -72,6 +75,40 @@ export async function ResidentDetailView({ dni }) {
         </tbody>
       </table>
     </div>
+      <div class="card">
+    <div class="row">
+      <div>
+        <h3>Courses</h3>
+        <p class="muted">Courses this resident is enrolled in.</p>
+      </div>
+      <div style="display:flex; justify-content:flex-end; align-items:flex-end;">
+        <button class="secondary" id="btnEnrollCourse">Enroll in a course</button>
+      </div>
+    </div>
+
+    ${
+      courses.length === 0
+        ? `<p class="muted">No course enrollments yet.</p>`
+        : `
+          <table>
+            <thead><tr><th>Name</th><th>Start</th><th>End</th><th>Price</th><th>Duration</th><th>Enrollment date</th></tr></thead>
+            <tbody>
+              ${courses.map(c => `
+                <tr data-course="${c.courseId}" style="cursor:pointer">
+                  <td>${c.name}</td>
+                  <td>${c.startDate}</td>
+                  <td>${c.endDate}</td>
+                  <td>${moneyEUR(c.price)}</td>
+                  <td>${c.durationHours}h</td>
+                  <td>${c.enrollmentDate}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `
+    }
+  </div>
+
   `;
 
   requestAnimationFrame(bind);
@@ -89,5 +126,16 @@ export async function ResidentDetailView({ dni }) {
     root.querySelectorAll("tr[data-id]").forEach((tr) => {
       tr.onclick = () => (location.hash = `#/invoices/${encodeURIComponent(tr.dataset.id)}`);
     });
+
+    const btnEnrollCourse = root.querySelector("#btnEnrollCourse");
+    if (btnEnrollCourse) {
+      btnEnrollCourse.onclick = () => location.hash = `#/enrollments/new?residentDni=${encodeURIComponent(dni)}`;
+
+    }
+
+    root.querySelectorAll("tr[data-course]").forEach(tr => {
+      tr.onclick = () => (location.hash = `#/courses/${encodeURIComponent(tr.dataset.course)}`);
+    });
+    
   }
 }
