@@ -20,6 +20,16 @@ import { CoursesDetailView } from "./views/CoursesDetailView.js";
 import { SubjectFormView } from "./views/SubjectFormView.js";
 import { EnrollmentFormView } from "./views/EnrollmentFormView.js";
 
+//exercise 3
+import { AuditorsListView } from "./views/AuditorsListView.js";
+import { AuditorFormView } from "./views/AuditorFormView.js";
+import { MaterialsListView } from "./views/MaterialsListView.js";
+import { MaterialFormView } from "./views/MaterialFormView.js";
+import { AuditsListView } from "./views/AuditsListView.js";
+import { AuditCreateView } from "./views/AuditCreateView.js";
+import { AuditDetailView } from "./views/AuditDetailView.js";
+
+
 const app = document.getElementById("app");
 
 function parseHash() {
@@ -136,6 +146,50 @@ async function render() {
       app.innerHTML = await EnrollmentFormView({ courseId, residentDni });
       return;
     }
+        // ===================== Exercise 3 =====================
+
+    // Auditors
+    if (parts[0] === "auditors" && parts.length === 1) {
+      app.innerHTML = await AuditorsListView();
+      return;
+    }
+    if (parts[0] === "auditors" && parts[1] === "new") {
+      app.innerHTML = await AuditorFormView({ mode: "create" });
+      return;
+    }
+    if (parts[0] === "auditors" && parts.length === 2) {
+      app.innerHTML = await AuditorFormView({ mode: "edit", auditorId: decodeURIComponent(parts[1]) });
+      return;
+    }
+
+    // Materials
+    if (parts[0] === "materials" && parts.length === 1) {
+      app.innerHTML = await MaterialsListView();
+      return;
+    }
+    if (parts[0] === "materials" && parts[1] === "new") {
+      app.innerHTML = await MaterialFormView({ mode: "create" });
+      return;
+    }
+    if (parts[0] === "materials" && parts.length === 2) {
+      app.innerHTML = await MaterialFormView({ mode: "edit", materialId: decodeURIComponent(parts[1]) });
+      return;
+    }
+
+    // Audits
+    if (parts[0] === "audits" && parts.length === 1) {
+      app.innerHTML = await AuditsListView();
+      return;
+    }
+    if (parts[0] === "audits" && parts[1] === "new") {
+      app.innerHTML = await AuditCreateView();
+      return;
+    }
+    if (parts[0] === "audits" && parts.length === 2) {
+      app.innerHTML = await AuditDetailView({ auditId: decodeURIComponent(parts[1]) });
+      return;
+    }
+
 
     // Default
     location.hash = "#/residents";

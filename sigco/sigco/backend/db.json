@@ -113,8 +113,8 @@
     {
       "teacherId": 2,
       "firstName": "Chimo",
-      "lastName": "Iba�ez",
-      "address": "C/ Col�n 5",
+      "lastName": "Ibanez",
+      "address": "C/ Colon 5",
       "phone": "+34 622 222 222",
       "salary": 1500
     }
@@ -173,6 +173,60 @@
       "enrollmentDate": "2025-12-17"
     }
   ],
+  "auditors": [
+    {
+      "auditorId": 1,
+      "firstName": "Maria",
+      "lastName": "Santos",
+      "companyCif": "B12345678",
+      "companyName": "AUDIT SL",
+      "companyAddress": "C/ Auditoria 3",
+      "companyPhone": "+34 911 000 000"
+    },
+    {
+      "auditorId": 2,
+      "firstName": "Chimo",
+      "lastName": "Ibanez",
+      "companyCif": "sdfsdfs",
+      "companyName": "1",
+      "companyAddress": "1",
+      "companyPhone": "999999999"
+    }
+  ],
+  "materials": [
+    {
+      "materialId": 3,
+      "name": "phone",
+      "price": 3
+    }
+  ],
+  "audits": [
+    {
+      "auditId": 1,
+      "creationDate": "2025-12-20",
+      "endDate": null,
+      "auditorId": 1,
+      "visitIds": [],
+      "materials": [],
+      "salarySnapshot": null
+    },
+    {
+      "auditId": 2,
+      "creationDate": "2025-12-17",
+      "endDate": null,
+      "auditorId": 1,
+      "visitIds": [
+        1004
+      ],
+      "materials": [
+        {
+          "materialId": 3,
+          "quantity": 12
+        }
+      ],
+      "salarySnapshot": null
+    }
+  ],
   "counters": {
     "visitId": 1004,
     "invoiceId": 5003,
@@ -180,6 +234,9 @@
     "teacherId": 3,
     "courseId": 2,
     "subjectId": 2,
-    "enrollmentId": 3
+    "enrollmentId": 3,
+    "auditorId": 2,
+    "materialId": 3,
+    "auditId": 2
   }
 }

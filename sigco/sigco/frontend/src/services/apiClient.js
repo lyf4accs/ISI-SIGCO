@@ -2,6 +2,7 @@ const BASE_URL = "http://localhost:3000/api";
 
 export async function api(path, options = {}) {
   const res = await fetch(`${BASE_URL}${path}`, {
+    cache: "no-store",
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     ...options
   });

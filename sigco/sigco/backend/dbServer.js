@@ -35,6 +35,12 @@ function ensureDbShape(input) {
     subjects: Array.isArray(db.subjects) ? db.subjects : [],
     enrollments: Array.isArray(db.enrollments) ? db.enrollments : [],
 
+        // Exercise 3
+    auditors: Array.isArray(db.auditors) ? db.auditors : [],
+    materials: Array.isArray(db.materials) ? db.materials : [],
+    audits: Array.isArray(db.audits) ? db.audits : [],
+
+
     counters: {
       // Exercise 1
       visitId: Number(db?.counters?.visitId ?? 1000),
@@ -45,7 +51,13 @@ function ensureDbShape(input) {
       teacherId: Number(db?.counters?.teacherId ?? 0),
       courseId: Number(db?.counters?.courseId ?? 0),
       subjectId: Number(db?.counters?.subjectId ?? 0),
-      enrollmentId: Number(db?.counters?.enrollmentId ?? 0)
+      enrollmentId: Number(db?.counters?.enrollmentId ?? 0),
+          
+      // Exercise 3
+      auditorId: Number(db?.counters?.auditorId ?? 0),
+      materialId: Number(db?.counters?.materialId ?? 0),
+      auditId: Number(db?.counters?.auditId ?? 0),
+
     }
   };
 
@@ -1306,6 +1318,555 @@ app.get("/api/residents/:dni/enrolled-courses", (req, res) => {
 
   res.json(courses);
 });
+
+// =======================================================================
+// ===================== Exercise 3: Auditors/Materials/Audits ============
+// =======================================================================
+
+// ---------- Helpers (Exercise 3) ----------
+const findAuditor = (db, id) => db.auditors.find(a => String(a.auditorId) === String(id));
+const findMaterial = (db, id) => db.materials.find(m => String(m.materialId) === String(id));
+const findVisit = (db, id) => db.visits.find(v => String(v.visitId) === String(id));
+
+function auditStatus(audit) {
+  return audit.endDate == null ? "OPEN" : "FINALIZED";
+}
+
+function computeAuditVisitsTotal(db, audit) {
+  const ids = Array.isArray(audit.visitIds) ? audit.visitIds : [];
+  const total = ids.reduce((sum, vid) => {
+    const v = findVisit(db, vid);
+    return sum + (v ? Number(v.amount || 0) : 0);
+  }, 0);
+  return Math.round(total * 100) / 100;
+}
+
+function computeAuditSalary(totalAmount) {
+  return Math.round((Number(totalAmount || 0) * 0.2) * 100) / 100;
+}
+
+function enrichAuditRow(db, audit) {
+  const auditor = findAuditor(db, audit.auditorId);
+  const auditedVisitsTotalAmount = computeAuditVisitsTotal(db, audit);
+  const auditorSalaryAmount =
+    audit.salarySnapshot != null
+      ? Number(audit.salarySnapshot)
+      : computeAuditSalary(auditedVisitsTotalAmount);
+
+  return {
+    ...audit,
+    status: auditStatus(audit),
+    visitsCount: Array.isArray(audit.visitIds) ? audit.visitIds.length : 0,
+    auditedVisitsTotalAmount,
+    auditorSalaryAmount,
+    auditorCompanyName: auditor?.companyName ?? "",
+    auditorCompanyCif: auditor?.companyCif ?? ""
+  };
+}
+
+// --------------------- Auditors ---------------------
+app.get("/api/auditors", (req, res) => {
+  const db = loadDb();
+  const q = String(req.query.q ?? "").trim().toLowerCase();
+
+  let items = db.auditors;
+  if (q) {
+    items = items.filter(a => {
+      const hay = `${a.firstName} ${a.lastName} ${a.companyName} ${a.companyCif} ${a.companyPhone}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  const enriched = items.map(a => ({
+    ...a,
+    auditsCount: db.audits.filter(x => String(x.auditorId) === String(a.auditorId)).length
+  }));
+
+  res.json(enriched);
+});
+
+app.get("/api/auditors/:auditorId", (req, res) => {
+  const db = loadDb();
+  const a = findAuditor(db, req.params.auditorId);
+  if (!a) return httpError(res, 404, "Auditor not found");
+
+  const auditsCount = db.audits.filter(x => String(x.auditorId) === String(a.auditorId)).length;
+  res.json({ ...a, auditsCount });
+});
+
+app.post("/api/auditors", async (req, res) => {
+  try {
+    const p = req.body ?? {};
+
+    const firstName = String(p.firstName ?? "").trim();
+    const lastName = String(p.lastName ?? "").trim();
+    const companyCif = String(p.companyCif ?? "").trim();
+    const companyName = String(p.companyName ?? "").trim();
+    const companyAddress = String(p.companyAddress ?? "").trim();
+    const companyPhone = String(p.companyPhone ?? "").trim();
+
+    if (!isNonEmptyString(firstName)) return httpError(res, 400, "firstName is required");
+    if (!isNonEmptyString(lastName)) return httpError(res, 400, "lastName is required");
+    if (!isNonEmptyString(companyCif)) return httpError(res, 400, "companyCif is required");
+    if (!isNonEmptyString(companyName)) return httpError(res, 400, "companyName is required");
+    if (!isNonEmptyString(companyAddress)) return httpError(res, 400, "companyAddress is required");
+    if (!validatePhone(companyPhone)) return httpError(res, 400, "Invalid companyPhone");
+
+    const created = await withDbWrite(db => {
+      const dup = db.auditors.some(a => String(a.companyCif).toLowerCase() === companyCif.toLowerCase());
+      if (dup) {
+        const err = new Error("Auditor company CIF already exists");
+        err.status = 409;
+        throw err;
+      }
+
+      const auditor = {
+        auditorId: nextId(db, "auditorId"),
+        firstName,
+        lastName,
+        companyCif,
+        companyName,
+        companyAddress,
+        companyPhone
+      };
+      db.auditors.push(auditor);
+      return auditor;
+    });
+
+    res.status(201).json(created);
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+app.put("/api/auditors/:auditorId", async (req, res) => {
+  try {
+    const id = req.params.auditorId;
+    const p = req.body ?? {};
+
+    const updated = await withDbWrite(db => {
+      const idx = db.auditors.findIndex(a => String(a.auditorId) === String(id));
+      if (idx < 0) {
+        const err = new Error("Auditor not found");
+        err.status = 404;
+        throw err;
+      }
+
+      const current = db.auditors[idx];
+      const next = { ...current };
+
+      if (p.firstName != null) next.firstName = String(p.firstName).trim();
+      if (p.lastName != null) next.lastName = String(p.lastName).trim();
+      if (p.companyCif != null) next.companyCif = String(p.companyCif).trim();
+      if (p.companyName != null) next.companyName = String(p.companyName).trim();
+      if (p.companyAddress != null) next.companyAddress = String(p.companyAddress).trim();
+      if (p.companyPhone != null) next.companyPhone = String(p.companyPhone).trim();
+
+      if (!isNonEmptyString(next.firstName)) { const err = new Error("firstName is required"); err.status = 400; throw err; }
+      if (!isNonEmptyString(next.lastName)) { const err = new Error("lastName is required"); err.status = 400; throw err; }
+      if (!isNonEmptyString(next.companyCif)) { const err = new Error("companyCif is required"); err.status = 400; throw err; }
+      if (!isNonEmptyString(next.companyName)) { const err = new Error("companyName is required"); err.status = 400; throw err; }
+      if (!isNonEmptyString(next.companyAddress)) { const err = new Error("companyAddress is required"); err.status = 400; throw err; }
+      if (!validatePhone(next.companyPhone)) { const err = new Error("Invalid companyPhone"); err.status = 400; throw err; }
+
+      const dup = db.auditors.some(a =>
+        String(a.auditorId) !== String(id) &&
+        String(a.companyCif).toLowerCase() === String(next.companyCif).toLowerCase()
+      );
+      if (dup) {
+        const err = new Error("Auditor company CIF already exists");
+        err.status = 409;
+        throw err;
+      }
+
+      db.auditors[idx] = next;
+      return next;
+    });
+
+    res.json(updated);
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+app.delete("/api/auditors/:auditorId", async (req, res) => {
+  try {
+    const id = req.params.auditorId;
+    await withDbWrite(db => {
+      const a = findAuditor(db, id);
+      if (!a) { const err = new Error("Auditor not found"); err.status = 404; throw err; }
+
+      const used = db.audits.some(x => String(x.auditorId) === String(id));
+      if (used) { const err = new Error("Cannot delete auditor: auditor is assigned to audits"); err.status = 409; throw err; }
+
+      db.auditors = db.auditors.filter(x => String(x.auditorId) !== String(id));
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+// --------------------- Materials ---------------------
+app.get("/api/materials", (req, res) => {
+  const db = loadDb();
+  const q = String(req.query.q ?? "").trim().toLowerCase();
+
+  let items = db.materials;
+  if (q) items = items.filter(m => String(m.name ?? "").toLowerCase().includes(q));
+
+  res.json(items);
+});
+
+app.get("/api/materials/:materialId", (req, res) => {
+  const db = loadDb();
+  const m = findMaterial(db, req.params.materialId);
+  if (!m) return httpError(res, 404, "Material not found");
+  res.json(m);
+});
+
+app.post("/api/materials", async (req, res) => {
+  try {
+    const p = req.body ?? {};
+    const name = String(p.name ?? "").trim();
+    const price = parseMoney(p.price);
+
+    if (!isNonEmptyString(name)) return httpError(res, 400, "name is required");
+    if (price == null || price < 0) return httpError(res, 400, "price must be >= 0");
+
+    const created = await withDbWrite(db => {
+      const dup = db.materials.some(m => String(m.name ?? "").toLowerCase() === name.toLowerCase());
+      if (dup) { const err = new Error("Material name already exists"); err.status = 409; throw err; }
+
+      const material = { materialId: nextId(db, "materialId"), name, price };
+      db.materials.push(material);
+      return material;
+    });
+
+    res.status(201).json(created);
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+app.put("/api/materials/:materialId", async (req, res) => {
+  try {
+    const id = req.params.materialId;
+    const p = req.body ?? {};
+
+    const updated = await withDbWrite(db => {
+      const idx = db.materials.findIndex(m => String(m.materialId) === String(id));
+      if (idx < 0) { const err = new Error("Material not found"); err.status = 404; throw err; }
+
+      const current = db.materials[idx];
+      const next = { ...current };
+
+      if (p.name != null) next.name = String(p.name).trim();
+      if (p.price != null) next.price = parseMoney(p.price);
+
+      if (!isNonEmptyString(next.name)) { const err = new Error("name is required"); err.status = 400; throw err; }
+      if (next.price == null || next.price < 0) { const err = new Error("price must be >= 0"); err.status = 400; throw err; }
+
+      const dup = db.materials.some(m =>
+        String(m.materialId) !== String(id) &&
+        String(m.name ?? "").toLowerCase() === next.name.toLowerCase()
+      );
+      if (dup) { const err = new Error("Material name already exists"); err.status = 409; throw err; }
+
+      db.materials[idx] = next;
+      return next;
+    });
+
+    res.json(updated);
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+app.delete("/api/materials/:materialId", async (req, res) => {
+  try {
+    const id = req.params.materialId;
+    await withDbWrite(db => {
+      const m = findMaterial(db, id);
+      if (!m) { const err = new Error("Material not found"); err.status = 404; throw err; }
+
+      const used = db.audits.some(a => (a.materials || []).some(x => String(x.materialId) === String(id)));
+      if (used) { const err = new Error("Cannot delete material: material is used in an audit"); err.status = 409; throw err; }
+
+      db.materials = db.materials.filter(x => String(x.materialId) !== String(id));
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+// --------------------- Audits ---------------------
+app.get("/api/audits", (req, res) => {
+  const db = loadDb();
+  const status = String(req.query.status ?? "").toUpperCase(); // OPEN|FINALIZED|"" (all)
+  const auditorId = String(req.query.auditorId ?? "").trim();
+  const from = String(req.query.from ?? "").trim();
+  const to = String(req.query.to ?? "").trim();
+
+  let items = db.audits;
+
+  if (auditorId) items = items.filter(a => String(a.auditorId) === String(auditorId));
+  if (from) items = items.filter(a => String(a.creationDate) >= from);
+  if (to) items = items.filter(a => String(a.creationDate) <= to);
+
+  if (status === "OPEN") items = items.filter(a => a.endDate == null);
+  if (status === "FINALIZED") items = items.filter(a => a.endDate != null);
+
+  const out = items
+    .map(a => enrichAuditRow(db, a))
+    .sort((a, b) => (a.creationDate < b.creationDate ? 1 : -1));
+
+  res.json(out);
+});
+
+app.get("/api/audits/:auditId", (req, res) => {
+  const db = loadDb();
+  const audit = db.audits.find(a => String(a.auditId) === String(req.params.auditId));
+  if (!audit) return httpError(res, 404, "Audit not found");
+
+  const auditor = findAuditor(db, audit.auditorId);
+
+  const visits = (audit.visitIds || [])
+    .map(vid => findVisit(db, vid))
+    .filter(Boolean)
+    .map(v => {
+      const out = { ...v };
+      enforceVisitPaidConsistency(out);
+      return out;
+    });
+
+  const materials = (audit.materials || [])
+    .map(x => {
+      const m = findMaterial(db, x.materialId);
+      if (!m) return null;
+      const qty = Number(x.quantity || 1);
+      return {
+        materialId: m.materialId,
+        name: m.name,
+        price: m.price,
+        quantity: qty,
+        lineTotal: Math.round((Number(m.price || 0) * qty) * 100) / 100
+      };
+    })
+    .filter(Boolean);
+
+  const auditedVisitsTotalAmount = computeAuditVisitsTotal(db, audit);
+  const auditorSalaryAmount =
+    audit.salarySnapshot != null
+      ? Number(audit.salarySnapshot)
+      : computeAuditSalary(auditedVisitsTotalAmount);
+
+  res.json({
+    ...audit,
+    status: auditStatus(audit),
+    auditor: auditor || null,
+    visits,
+    materials,
+    auditedVisitsTotalAmount,
+    auditorSalaryAmount
+  });
+});
+
+app.post("/api/audits", async (req, res) => {
+  try {
+    const p = req.body ?? {};
+    const creationDate = String(p.creationDate ?? "").trim();
+    const auditorId = p.auditorId;
+
+    if (!isIsoDate(creationDate)) return httpError(res, 400, "creationDate is required (YYYY-MM-DD)");
+    if (auditorId == null) return httpError(res, 400, "auditorId is required");
+
+    const created = await withDbWrite(db => {
+      if (!findAuditor(db, auditorId)) {
+        const err = new Error("Unknown auditor");
+        err.status = 404;
+        throw err;
+      }
+
+      const audit = {
+        auditId: nextId(db, "auditId"),
+        creationDate,
+        endDate: null,
+        auditorId,
+        visitIds: [],
+        materials: [],
+        salarySnapshot: null
+      };
+      db.audits.push(audit);
+      return audit;
+    });
+
+    res.status(201).json(created);
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+// Eligible visits helper endpoint (optional but useful for UI)
+app.get("/api/audits/:auditId/available-visits", (req, res) => {
+  const db = loadDb();
+  const audit = db.audits.find(a => String(a.auditId) === String(req.params.auditId));
+  if (!audit) return httpError(res, 404, "Audit not found");
+
+  const already = new Set((audit.visitIds || []).map(x => String(x)));
+  const eligible = db.visits
+    .filter(v => !already.has(String(v.visitId)))
+    .filter(v => String(v.visitDate) <= String(audit.creationDate)) // already carried out rule
+    .map(v => {
+      const out = { ...v };
+      enforceVisitPaidConsistency(out);
+      return out;
+    })
+    .sort((a, b) => (a.visitDate < b.visitDate ? 1 : -1));
+
+  res.json(eligible);
+});
+
+app.post("/api/audits/:auditId/visits", async (req, res) => {
+  try {
+    const auditId = req.params.auditId;
+    const visitIds = req.body?.visitIds;
+
+    if (!Array.isArray(visitIds) || visitIds.length === 0) {
+      return httpError(res, 400, "visitIds must be a non-empty array");
+    }
+
+    const updated = await withDbWrite(db => {
+      const audit = db.audits.find(a => String(a.auditId) === String(auditId));
+      if (!audit) { const err = new Error("Audit not found"); err.status = 404; throw err; }
+      if (audit.endDate != null) { const err = new Error("Cannot assign visits: audit is finalized."); err.status = 409; throw err; }
+
+      // validate all visits exist + already carried out by creation date
+      for (const vid of visitIds) {
+        const v = findVisit(db, vid);
+        if (!v) { const err = new Error(`Unknown visitId: ${vid}`); err.status = 404; throw err; }
+        if (String(v.visitDate) > String(audit.creationDate)) {
+          const err = new Error("Cannot assign visit that occurs after audit creation date");
+          err.status = 409;
+          throw err;
+        }
+      }
+
+      const set = new Set((audit.visitIds || []).map(x => String(x)));
+      for (const vid of visitIds) set.add(String(vid));
+      audit.visitIds = Array.from(set).map(x => (String(Number(x)) === x ? Number(x) : x)); // keep numbers if possible
+
+      return audit;
+    });
+
+    res.json(updated);
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+app.post("/api/audits/:auditId/materials", async (req, res) => {
+  try {
+    const auditId = req.params.auditId;
+    const items = req.body?.items;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return httpError(res, 400, "items must be a non-empty array");
+    }
+
+    const updated = await withDbWrite(db => {
+      const audit = db.audits.find(a => String(a.auditId) === String(auditId));
+      if (!audit) { const err = new Error("Audit not found"); err.status = 404; throw err; }
+      if (audit.endDate != null) { const err = new Error("Cannot assign materials: audit is finalized."); err.status = 409; throw err; }
+
+      const current = Array.isArray(audit.materials) ? audit.materials : [];
+      const map = new Map(current.map(x => [String(x.materialId), { materialId: x.materialId, quantity: Number(x.quantity || 1) }]));
+
+      for (const it of items) {
+        const materialId = it?.materialId;
+        const qty = parsePositiveInt(it?.quantity);
+        if (materialId == null) { const err = new Error("materialId is required"); err.status = 400; throw err; }
+        if (qty == null) { const err = new Error("quantity must be integer >= 1"); err.status = 400; throw err; }
+        if (!findMaterial(db, materialId)) { const err = new Error("Material not found"); err.status = 404; throw err; }
+
+        const key = String(materialId);
+        if (map.has(key)) {
+          map.get(key).quantity += qty;
+        } else {
+          map.set(key, { materialId, quantity: qty });
+        }
+      }
+
+      audit.materials = Array.from(map.values());
+      return audit;
+    });
+
+    res.json(updated);
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+app.post("/api/audits/:auditId/finalize", async (req, res) => {
+  try {
+    const auditId = req.params.auditId;
+    const endDate = String(req.body?.endDate ?? "").trim();
+
+    if (!isIsoDate(endDate)) return httpError(res, 400, "endDate is required (YYYY-MM-DD)");
+
+    const updated = await withDbWrite(db => {
+      const audit = db.audits.find(a => String(a.auditId) === String(auditId));
+      if (!audit) { const err = new Error("Audit not found"); err.status = 404; throw err; }
+      if (audit.endDate != null) { const err = new Error("Audit already finalized"); err.status = 409; throw err; }
+
+      if (String(endDate) <= String(audit.creationDate)) {
+        const err = new Error("End date must be later than creation date.");
+        err.status = 409;
+        throw err;
+      }
+
+      // recommended rule: do not finalize with 0 visits
+      if (!Array.isArray(audit.visitIds) || audit.visitIds.length === 0) {
+        const err = new Error("Cannot finalize audit without visits assigned.");
+        err.status = 409;
+        throw err;
+      }
+
+      audit.endDate = endDate;
+
+      // snapshot salary at finalization time (recommended)
+      const total = computeAuditVisitsTotal(db, audit);
+      audit.salarySnapshot = computeAuditSalary(total);
+
+      return audit;
+    });
+
+    res.json(updated);
+  } catch (e) {
+    return httpError(res, e.status || 500, e.message || "Server error");
+  }
+});
+
+app.get("/api/audits/:auditId/summary", (req, res) => {
+  const db = loadDb();
+  const audit = db.audits.find(a => String(a.auditId) === String(req.params.auditId));
+  if (!audit) return httpError(res, 404, "Audit not found");
+
+  const auditedVisitsTotalAmount = computeAuditVisitsTotal(db, audit);
+  const auditorSalaryAmount =
+    audit.salarySnapshot != null
+      ? Number(audit.salarySnapshot)
+      : computeAuditSalary(auditedVisitsTotalAmount);
+
+  res.json({
+    auditId: audit.auditId,
+    status: auditStatus(audit),
+    auditedVisitsTotalAmount,
+    auditorSalaryAmount
+  });
+});
+
 
 // ---------- Start ----------
 const PORT = 3000;
