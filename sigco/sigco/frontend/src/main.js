@@ -204,5 +204,7 @@ async function render() {
   }
 }
 
+
 window.addEventListener("hashchange", render);
 window.addEventListener("load", render);
+window.__SIGCO_RENDER__ = render;

@@ -67,6 +67,8 @@ export async function AuditorFormView({ mode, auditorId } = {}) {
       try {
         if (isEdit) await auditorsService.update(auditorId, payload);
         else await auditorsService.create(payload);
+        await window.__SIGCO_RENDER__();
+
 
         toast("Saved");
         location.hash = "#/auditors";

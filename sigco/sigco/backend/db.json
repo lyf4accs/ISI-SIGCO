@@ -198,6 +198,11 @@
       "materialId": 3,
       "name": "phone",
       "price": 3
+    },
+    {
+      "materialId": 4,
+      "name": "laptop",
+      "price": 7
     }
   ],
   "audits": [
@@ -221,7 +226,7 @@
       "materials": [
         {
           "materialId": 3,
-          "quantity": 12
+          "quantity": 14
         }
       ],
       "salarySnapshot": null
@@ -236,7 +241,7 @@
     "subjectId": 2,
     "enrollmentId": 3,
     "auditorId": 2,
-    "materialId": 3,
+    "materialId": 4,
     "auditId": 2
   }
 }

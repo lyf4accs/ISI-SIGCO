@@ -191,6 +191,8 @@ export async function AuditDetailView({ auditId }) {
           await auditsService.assignMaterials(auditId, [{ materialId: Number(materialId), quantity }]);
           toast("Material assigned");
           location.hash = `#/audits/${encodeURIComponent(auditId)}`;
+          await window.__SIGCO_RENDER__();
+
         } catch (e) {
           toast(e.message);
         }
