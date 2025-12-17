@@ -11,7 +11,7 @@ import { InvoiceListView } from "./views/InvoiceListView.js";
 import { InvoiceCreateView } from "./views/InvoiceCreateView.js";
 import { InvoiceDetailView } from "./views/InvoiceDetailView.js";
 
-// Exercise 2 views
+// Exercise 2 views (your naming)
 import { TeachersListView } from "./views/TeachersListView.js";
 import { TeacherFormView } from "./views/TeacherFormView.js";
 import { CoursesListView } from "./views/CoursesListView.js";
@@ -36,9 +36,8 @@ function parseHash() {
 async function render() {
   const { parts, query } = parseHash();
 
-
   try {
-    // Residents
+    // ---------------- Residents ----------------
     if (parts[0] === "residents" && parts.length === 1) {
       app.innerHTML = await ResidentListView();
       return;
@@ -52,26 +51,24 @@ async function render() {
       return;
     }
 
-    // Visits
+    // ---------------- Visits ----------------
     if (parts[0] === "visits" && parts.length === 1) {
       app.innerHTML = await VisitsListView();
       return;
     }
     if (parts[0] === "visits" && parts[1] === "new") {
-      const qp = getQuery();
-      const residentDni = qp.get("residentDni") || "";
+      const residentDni = query.get("residentDni") || "";
       app.innerHTML = await VisitsFormView({ residentDni });
       return;
     }
 
-    // Invoices
+    // ---------------- Invoices ----------------
     if (parts[0] === "invoices" && parts.length === 1) {
       app.innerHTML = await InvoiceListView();
       return;
     }
     if (parts[0] === "invoices" && parts[1] === "new") {
-      const qp = getQuery();
-      const residentDni = qp.get("residentDni") || "";
+      const residentDni = query.get("residentDni") || "";
       app.innerHTML = await InvoiceCreateView({ residentDni });
       return;
     }
@@ -82,7 +79,7 @@ async function render() {
 
     // ===================== Exercise 2 =====================
 
-    // Teachers
+    // ---------------- Teachers ----------------
     if (parts[0] === "teachers" && parts.length === 1) {
       app.innerHTML = await TeachersListView();
       return;
@@ -92,11 +89,14 @@ async function render() {
       return;
     }
     if (parts[0] === "teachers" && parts.length === 2) {
-      app.innerHTML = await TeacherFormView({ mode: "edit", teacherId: decodeURIComponent(parts[1]) });
+      app.innerHTML = await TeacherFormView({
+        mode: "edit",
+        teacherId: decodeURIComponent(parts[1])
+      });
       return;
     }
 
-    // Courses
+    // ---------------- Courses ----------------
     if (parts[0] === "courses" && parts.length === 1) {
       app.innerHTML = await CoursesListView();
       return;
@@ -110,31 +110,32 @@ async function render() {
       return;
     }
 
-    // Subject create/edit (opened from course detail)
+    // ---------------- Subjects ----------------
     // #/subjects/new?courseId=1
-    // #/subjects/123?courseId=1   (edit)
     if (parts[0] === "subjects" && parts[1] === "new") {
-      const qp = getQuery();
-      const courseId = qp.get("courseId") || "";
+      const courseId = query.get("courseId") || "";
       app.innerHTML = await SubjectFormView({ mode: "create", courseId });
       return;
     }
+    // #/subjects/:subjectId?courseId=1
     if (parts[0] === "subjects" && parts.length === 2) {
-      const qp = getQuery();
-      const courseId = qp.get("courseId") || "";
-      app.innerHTML = await SubjectFormView({ mode: "edit", subjectId: decodeURIComponent(parts[1]), courseId });
+      const courseId = query.get("courseId") || "";
+      app.innerHTML = await SubjectFormView({
+        mode: "edit",
+        subjectId: decodeURIComponent(parts[1]),
+        courseId
+      });
       return;
     }
 
-    // Enrollment create (opened from course detail or resident detail)
-    // #/enrollments/new?courseId=1&residentDni=123...
+    // ---------------- Enrollments ----------------
+    // #/enrollments/new?courseId=1&residentDni=...
     if (parts[0] === "enrollments" && parts[1] === "new") {
-  const courseId = query.get("courseId") || "";
-  const residentDni = query.get("residentDni") || "";
-  app.innerHTML = await EnrollmentFormView({ courseId, residentDni });
-  return;
-}
-
+      const courseId = query.get("courseId") || "";
+      const residentDni = query.get("residentDni") || "";
+      app.innerHTML = await EnrollmentFormView({ courseId, residentDni });
+      return;
+    }
 
     // Default
     location.hash = "#/residents";
