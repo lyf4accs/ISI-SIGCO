@@ -209,11 +209,18 @@
     {
       "auditId": 1,
       "creationDate": "2025-12-20",
-      "endDate": null,
+      "endDate": "2025-12-31",
       "auditorId": 1,
-      "visitIds": [],
-      "materials": [],
-      "salarySnapshot": null
+      "visitIds": [
+        1003
+      ],
+      "materials": [
+        {
+          "materialId": 3,
+          "quantity": 1
+        }
+      ],
+      "salarySnapshot": 70847
     },
     {
       "auditId": 2,
@@ -230,6 +237,39 @@
         }
       ],
       "salarySnapshot": null
+    },
+    {
+      "auditId": 3,
+      "creationDate": "2025-12-25",
+      "endDate": null,
+      "auditorId": 2,
+      "visitIds": [
+        1002
+      ],
+      "materials": [
+        {
+          "materialId": 4,
+          "quantity": 90
+        }
+      ],
+      "salarySnapshot": null
+    },
+    {
+      "auditId": 4,
+      "creationDate": "2025-12-19",
+      "endDate": null,
+      "auditorId": 1,
+      "visitIds": [
+        1001,
+        1004
+      ],
+      "materials": [
+        {
+          "materialId": 3,
+          "quantity": 1
+        }
+      ],
+      "salarySnapshot": null
     }
   ],
   "counters": {
@@ -242,6 +282,6 @@
     "enrollmentId": 3,
     "auditorId": 2,
     "materialId": 4,
-    "auditId": 2
+    "auditId": 4
   }
 }
